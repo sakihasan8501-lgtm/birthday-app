@@ -5,7 +5,7 @@
   <title>Birthday Login</title>
   <style>
     body {
-      font-family: Arial;
+      font-family: Arial, sans-serif;
       background: #222;
       color: #fff;
       text-align: center;
@@ -27,6 +27,11 @@
       color: white;
       font-size: 16px;
       border-radius: 8px;
+      cursor: pointer;
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: default;
     }
     .hidden { display: none; }
     .birthday {
@@ -51,12 +56,14 @@
 
   <div id="step1">
     <input id="email" type="email" placeholder="example@gmail.com" />
-    <button onclick="sendCode()">Send Code</button>
+    <br />
+    <button id="sendBtn" onclick="sendCode()">Send Code</button>
     <p id="msg1"></p>
   </div>
 
   <div id="step2" class="hidden">
     <input id="code" type="text" placeholder="Enter OTP" maxlength="6" />
+    <br />
     <button onclick="verifyCode()">Verify</button>
     <p id="msg2"></p>
   </div>
@@ -67,11 +74,20 @@
 
 <script>
 async function sendCode() {
-  const email = document.getElementById("email").value;
+  const email = document.getElementById("email").value.trim();
   const msg1 = document.getElementById("msg1");
+  const btn = document.getElementById("sendBtn");
+
+  if (!email) {
+    msg1.innerText = "Please enter a Gmail address.";
+    return;
+  }
+
   msg1.innerText = "Sending...";
+  btn.disabled = true;
 
   try {
+    // IMPORTANT: relative URL, same origin as Render
     const res = await fetch(
       "/send-code?email=" + encodeURIComponent(email)
     );
@@ -85,35 +101,21 @@ async function sendCode() {
       msg1.innerText = data.message || "Error sending code.";
     }
   } catch (e) {
+    console.error(e);
     msg1.innerText = "Cannot reach server.";
+  } finally {
+    btn.disabled = false;
   }
 }
 
 async function verifyCode() {
-  const email = document.getElementById("email").value;
-  const code = document.getElementById("code").value;
+  const email = document.getElementById("email").value.trim();
+  const code = document.getElementById("code").value.trim();
   const msg2 = document.getElementById("msg2");
-  msg2.innerText = "Verifying...";
 
-  try {
-    const res = await fetch(
-      "/verify-code?email=" +
-        encodeURIComponent(email) +
-        "&code=" +
-        encodeURIComponent(code)
-    );
-
-    const data = await res.json();
-    if (data.success) {
-      document.getElementById("step2").classList.add("hidden");
-      document.getElementById("birthday").classList.remove("hidden");
-    } else {
-      msg2.innerText = data.message || "Wrong code!";
-    }
-  } catch (e) {
-    msg2.innerText = "Cannot reach server.";
+  if (!code) {
+    msg2.innerText = "Please enter the code.";
+    return;
   }
-}
-</script>
-</body>
-</html>
+
+  msg2.innerText = "
