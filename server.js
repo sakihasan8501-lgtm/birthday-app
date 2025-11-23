@@ -7,7 +7,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.static(__dirname));  // serve static files
+app.use(express.static(__dirname)); // serve birthday.html and other static files
 
 // Store OTP + email
 let currentOtp = null;
@@ -18,19 +18,22 @@ const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: "sakihasan8501@gmail.com",
-    pass: "kevoqskqrauuqfle",   // your app password
+    pass: "kevoqskqrauuqfle", // your app password (no spaces)
   },
 });
 
-// Send OTP
+// === SEND CODE: /send-code?email=... ===
 app.get("/send-code", async (req, res) => {
   const email = req.query.email;
+
+  console.log("send-code hit for:", email);
 
   if (!email || !email.endsWith("@gmail.com")) {
     return res.status(400).json({ message: "Valid Gmail required" });
   }
 
-  currentOtp = Math.floor(100000 + Math.random() * 900000);
+  // Generate 6-digit OTP
+  currentOtp = Math.floor(100000 + Math.random() * 900000).toString();
   currentEmail = email;
 
   try {
@@ -39,7 +42,7 @@ app.get("/send-code", async (req, res) => {
       to: email,
       subject: "Your Birthday Login Code",
       text: `Your verification code is: ${currentOtp}`,
-      html: `<p>Your verification code is: <b>${currentOtp}</b></p>`
+      html: `<p>Your verification code is: <b>${currentOtp}</b></p>`,
     });
 
     console.log(`OTP ${currentOtp} sent to ${email}`);
@@ -50,18 +53,29 @@ app.get("/send-code", async (req, res) => {
   }
 });
 
-// Verify OTP
+// === VERIFY CODE: /verify-code?email=...&code=... ===
 app.get("/verify-code", (req, res) => {
+  const email = req.query.email;
   const code = req.query.code;
 
-  if (!code || code != currentOtp) {
-    return res.status(400).json({ message: "Invalid code" });
+  console.log("verify-code hit for:", email, "code:", code);
+
+  if (!email || !code) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Email and code required" });
   }
 
-  res.json({ message: "OTP Verified" });
+  if (email === currentEmail && code === currentOtp) {
+    return res.json({ success: true, message: "OTP verified" });
+  } else {
+    return res
+      .status(401)
+      .json({ success: false, message: "Invalid code" });
+  }
 });
 
-// Serve birthday page
+// Serve birthday page explicitly
 app.get("/birthday.html", (req, res) => {
   res.sendFile(path.join(__dirname, "birthday.html"));
 });
@@ -71,6 +85,7 @@ app.get("/", (req, res) => {
   res.send("OTP server is running ✅");
 });
 
+// IMPORTANT: listen on Render's port
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`OTP server running on port ${PORT}`);
 });
