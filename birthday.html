@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Birthday Login</title>
+  <style>
+    body {
+      font-family: Arial;
+      background: #222;
+      color: #fff;
+      text-align: center;
+      padding: 40px;
+    }
+    input {
+      padding: 10px;
+      width: 80%;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+    }
+    button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      background: #ff00c8;
+      border: none;
+      color: white;
+      font-size: 16px;
+      border-radius: 8px;
+    }
+    .hidden { display: none; }
+    .birthday {
+      font-size: 32px;
+      margin-top: 40px;
+      background: linear-gradient(45deg, #ff0066, #ffcc00, #00ffcc, #00aaff);
+      -webkit-background-clip: text;
+      color: transparent;
+      animation: glow 2s infinite linear;
+    }
+    @keyframes glow {
+      0% { filter: brightness(1); }
+      50% { filter: brightness(2); }
+      100% { filter: brightness(1); }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Welcome 🎂</h1>
+  <p>Enter your Gmail to continue</p>
+
+  <div id="step1">
+    <input id="email" type="email" placeholder="example@gmail.com" />
+    <button onclick="sendCode()">Send Code</button>
+    <p id="msg1"></p>
+  </div>
+
+  <div id="step2" class="hidden">
+    <input id="code" type="text" placeholder="Enter OTP" maxlength="6" />
+    <button onclick="verifyCode()">Verify</button>
+    <p id="msg2"></p>
+  </div>
+
+  <div id="birthday" class="hidden">
+    <h1 class="birthday">HAPPY BIRTHDAY 🎉🎈💖</h1>
+  </div>
+
+<script>
+async function sendCode() {
+  const email = document.getElementById("email").value;
+  const msg1 = document.getElementById("msg1");
+  msg1.innerText = "Sending...";
+
+  try {
+    const res = await fetch(
+      "/send-code?email=" + encodeURIComponent(email)
+    );
+
+    const data = await res.json();
+    if (res.ok) {
+      msg1.innerText = "Code sent! Check your Gmail.";
+      document.getElementById("step1").classList.add("hidden");
+      document.getElementById("step2").classList.remove("hidden");
+    } else {
+      msg1.innerText = data.message || "Error sending code.";
+    }
+  } catch (e) {
+    msg1.innerText = "Cannot reach server.";
+  }
+}
+
+async function verifyCode() {
+  const email = document.getElementById("email").value;
+  const code = document.getElementById("code").value;
+  const msg2 = document.getElementById("msg2");
+  msg2.innerText = "Verifying...";
+
+  try {
+    const res = await fetch(
+      "/verify-code?email=" +
+        encodeURIComponent(email) +
+        "&code=" +
+        encodeURIComponent(code)
+    );
+
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById("step2").classList.add("hidden");
+      document.getElementById("birthday").classList.remove("hidden");
+    } else {
+      msg2.innerText = data.message || "Wrong code!";
+    }
+  } catch (e) {
+    msg2.innerText = "Cannot reach server.";
+  }
+}
+</script>
+</body>
+</html>
